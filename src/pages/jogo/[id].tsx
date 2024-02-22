@@ -108,7 +108,7 @@ export default function Home() {
     <div className='container mx-auto bg-green-100'>
 
       <div className='text-center'>
-        <h1 className="hidden text-4xl font-bold text-center shadow-lg">Poker Night</h1>
+        <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
       </div>
 
       <div className='max-w-lg text-center mx-auto my-10'>
