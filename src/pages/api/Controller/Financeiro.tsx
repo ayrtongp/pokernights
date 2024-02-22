@@ -133,9 +133,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
           const result = await mainCollection.deleteMany({ jogo_id: jogoId });
 
           if (result.deletedCount === 0) {
-            return res.status(202).json({ message: 'Nenhum valor deletado!', });
+            return res.status(402).json({ message: 'Nenhum valor deletado!', });
           }
 
+          return res.status(201).json({ message: 'Financeiro deletado com sucesso', method: 'DELETE' });
+        } catch (err) {
+
+          return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
+        }
+      }
+
+      else if (req.query.type === 'deleteId') {
+        const despesaId = new ObjectId(req.query.despesaId as unknown as ObjectId);
+        const result = await mainCollection.deleteOne({ _id: despesaId });
+
+        try {
+          if (result.deletedCount === 0) {
+            return res.status(402).json({ message: 'Problema ao deletar!', });
+          }
           return res.status(201).json({ message: 'Financeiro deletado com sucesso', method: 'DELETE' });
         } catch (err) {
 

@@ -4,12 +4,12 @@ import TextInputM2 from '@/components/Forms/TextInputM2'
 import PokerTable from '@/components/Poker/PokerTable'
 import TabelaPadrao from '@/components/Tabelas/TabelaPadrao';
 import { useEffect, useState } from 'react'
-import { formatValue } from '@/utils/functions'
+import { formatValue, notifyError, notifySuccess } from '@/utils/functions'
 import AccordionM1 from '@/components/AccordionM1';
 import { useRouter } from 'next/router';
 import Jogadores_new from '@/actions/Jogadores_new';
 import Jogadores_getGame from '@/actions/Jogadores_getGame';
-import { Financeiro_getGame } from '@/actions/Financeiro';
+import { Financeiro_deleteId, Financeiro_getGame } from '@/actions/Financeiro';
 
 export default function Home() {
 
@@ -40,6 +40,19 @@ export default function Home() {
   const handleAddFichasSuccess = () => {
     setTriggerFetch(prev => !prev); // Alterna o estado para disparar o useEffect
   };
+
+  const handleDelete = async (e: any) => {
+    if (window.confirm("Você realmente deseja fazer isso?")) {
+      console.log(e.currentTarget)
+      const { data, responseOk } = await Financeiro_deleteId(e.currentTarget.id)
+      if (responseOk) {
+        notifySuccess('Despesa Deletada')
+        setTriggerFetch(prev => !prev); // Alterna o estado para disparar o useEffect
+      }
+    } else {
+      notifyError('Ação Cancelada')
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -172,11 +185,11 @@ export default function Home() {
               </thead>
               <tbody>
                 {financeiro.length > 0 && (
-                  financeiro.map((despesa: any) => {
+                  financeiro.map((despesa: any, index: number) => {
                     const criado = (despesa.createdAt).split(' ')
-
+                    console.log(despesa._id)
                     return (
-                      <tr className='whitespace-nowrap'>
+                      <tr id={despesa._id} key={index} onClick={handleDelete} className='whitespace-nowrap'>
                         <td className='hidden'>{despesa._id}</td>
                         <td className='py-2 px-4 border-b whitespace-nowrap'>{criado[1]}</td>
                         <td className='py-2 px-4 border-b whitespace-nowrap'>{despesa.nome_jogador}</td>
