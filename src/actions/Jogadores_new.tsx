@@ -10,7 +10,6 @@ export default async function Jogadores_new(params: object) {
       body: JSON.stringify(params),
     });
 
-    console.log(response)
     if (!response.ok) {
       notifyError('Falha ao adicionar novo jogo')
       throw new Error('Falha ao adicionar novo jogo');
@@ -18,7 +17,6 @@ export default async function Jogadores_new(params: object) {
 
     const data = await response.json();
     notifySuccess('Jogo adicionado com sucesso')
-    console.log(data);
     return data; // Retorna os dados do jogo adicionado
   } catch (error) {
     console.error('Erro ao adicionar novo jogo:', error);

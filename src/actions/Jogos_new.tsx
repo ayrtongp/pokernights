@@ -17,7 +17,6 @@ export default async function Jogos_new() {
 
     const data = await response.json();
     notifySuccess('Jogo adicionado com sucesso')
-    console.log(data);
     return data; // Retorna os dados do jogo adicionado
   } catch (error) {
     console.error('Erro ao adicionar novo jogo:', error);

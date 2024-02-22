@@ -9,15 +9,19 @@ import AccordionM1 from '@/components/AccordionM1';
 import { useRouter } from 'next/router';
 import Jogadores_new from '@/actions/Jogadores_new';
 import Jogadores_getGame from '@/actions/Jogadores_getGame';
+import { Financeiro_getGame } from '@/actions/Financeiro';
 
 export default function Home() {
 
   const router = useRouter();
   const { id } = router.query
+  const [triggerFetch, setTriggerFetch] = useState(false);
+  const [jogadores, setJogadores] = useState([]);
+  const [financeiro, setFinanceiro] = useState([]);
+  const [tableJogadores, setTableJogadores] = useState();
 
   const [nomeJogadorDespesa, setNomeJogadorDespesa] = useState('');
   const [novoJogador, setNovoJogador] = useState('');
-  const [jogadores, setJogadores] = useState();
   const [nomeDespesa, setNomeDespesa] = useState('');
   const [valorDespesa, setValorDespesa] = useState(0);
   const [valorJogador, setValorJogador] = useState(0);
@@ -28,22 +32,66 @@ export default function Home() {
       jogo_id: id,
       nome_jogador: novoJogador
     }
-    console.log(objData)
     const newJogador = await Jogadores_new(objData);
-    console.log("hey: " + newJogador)
     setNovoJogador('')
+    setTriggerFetch(prev => !prev); // Alterna o estado para disparar o useEffect
   }
+
+  const handleAddFichasSuccess = () => {
+    setTriggerFetch(prev => !prev); // Alterna o estado para disparar o useEffect
+  };
 
   useEffect(() => {
     async function fetchData() {
       if (id != undefined && id != null) {
         const getJogadores = await Jogadores_getGame(id as string)
+        const { data: getFinanceiro, responseOk: res1 } = await Financeiro_getGame(id as string);
         setJogadores(getJogadores)
-        console.log(getJogadores)
+        setFinanceiro(getFinanceiro)
+
+        const tabelaJogadores = getJogadores.map((jogador: any) => {
+          // Calcula o saldo de cada jogador
+          const saldo = getFinanceiro.reduce((acc: any, financeiro: any) => {
+            if (financeiro.jogador_id === jogador._id) {
+              return acc + financeiro.valor; // Assumindo que `valor` é um número
+            }
+            return acc;
+          }, 0); // Inicializa o acumulador com 0
+          const fichas = getFinanceiro.reduce((acc: any, financeiro: any) => {
+            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Fichas") {
+              return acc + financeiro.valor; // Assumindo que `valor` é um número
+            }
+            return acc;
+          }, 0); // Inicializa o acumulador com 0
+          const despesas = getFinanceiro.reduce((acc: any, financeiro: any) => {
+            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas" && financeiro.nome_despesa != 'Final') {
+              return acc + financeiro.valor; // Assumindo que `valor` é um número
+            }
+            return acc;
+          }, 0); // Inicializa o acumulador com 0
+          const fichasFinal = getFinanceiro.reduce((acc: any, financeiro: any) => {
+            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas" && financeiro.nome_despesa == 'Final') {
+              return acc + financeiro.valor; // Assumindo que `valor` é um número
+            }
+            return acc;
+          }, 0); // Inicializa o acumulador com 0
+
+          // Retorna um novo objeto jogador com o saldo adicionado
+          return {
+            ...jogador,
+            saldo: saldo,
+            fichas: fichas,
+            despesas: despesas,
+            fichasFinal: fichasFinal,
+          };
+        })
+        setTableJogadores(tabelaJogadores)
       }
     }
     fetchData();
-  }, [])
+  }, [id, triggerFetch])
+
+  useEffect(() => { }, [])
 
   // Trata a mudança do valor, removendo a formatação monetária antes de passar para o callback
   const handleValue = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,26 +104,17 @@ export default function Home() {
     }
   };
 
-  const players = [
-    { _id: 1, nome: 'Ayrton wqew', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 12, nome: 'Ayrton', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 13, nome: 'Ayrton', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 14, nome: 'Ayrton', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 15, nome: 'Ayrton', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 16, nome: 'Ayrton', fichas: 350.57, despesas: 0, saldo: 0 },
-    { _id: 17, nome: 'Robson', fichas: 20, despesas: 0, saldo: 0 },
-    { _id: 18, nome: 'Giovanni', fichas: 40, despesas: 0, saldo: 0 },
-    { _id: 19, nome: 'Marcelo', fichas: 60, despesas: 0, saldo: 0 },
-  ]
   return (
     <div className='container mx-auto bg-green-100'>
 
       <div className='text-center'>
-        <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
+        <h1 className="hidden text-4xl font-bold text-center shadow-lg">Poker Night</h1>
       </div>
 
       <div className='max-w-lg text-center mx-auto my-10'>
-        <PokerTable players={players} />
+        {jogadores && (
+          <PokerTable jogadores={jogadores} financeiro={financeiro} onAddFichasSuccess={handleAddFichasSuccess} />
+        )}
       </div>
 
       <div className='p-2'>
@@ -93,26 +132,80 @@ export default function Home() {
 
       <div className='p-2'>
         <AccordionM1 title={"Tabela de Jogadores"} children={
-          <TabelaPadrao id={'tabela-jogadores'}
-            resultData={players}
-            arrayHeaderNames={['_id', 'Nome', 'Fichas (R$)', 'Despesas', 'Saldo']}
-            arrayRowsNames={['_id', 'nome', 'fichas', 'despesas', 'saldo']}
-            handlePageChange={() => null}
-            onRowClick={() => null}
-            esconderPaginacao />
+          <div>
+            <TabelaPadrao id={'tabela-jogadores'}
+              resultData={tableJogadores}
+              arrayHeaderNames={['_id', 'Nome', 'Fichas (R$)', 'Fichas Final', 'Despesas', 'Saldo']}
+              arrayRowsNames={['_id', 'nome_jogador', 'fichas', 'fichasFinal', 'despesas', 'saldo']}
+              handlePageChange={() => null}
+              onRowClick={() => null}
+              esconderPaginacao />
+
+            <div className='mt-10'>
+              <p className='font-bold'>Compras de Ficha:
+                <span className='font-normal pl-2'>{financeiro.filter((fin: any) => fin.categoria === 'Fichas').reduce((total: any, fin: any) => total + fin.valor, 0)}  </span>
+              </p>
+              <p className='font-bold'>Fichas Final:
+                <span className='font-normal pl-2'>{financeiro.filter((fin: any) => fin.nome_despesa === 'Final').reduce((total: any, fin: any) => total + fin.valor, 0)}  </span>
+              </p>
+              <p className='font-bold'>Despesas:
+                <span className='font-normal pl-2'>{financeiro.filter((fin: any) => fin.nome_despesa !== 'Final').reduce((total: any, fin: any) => total + fin.valor, 0)}  </span>
+              </p>
+            </div>
+
+          </div>
         } />
       </div>
 
       <div className='p-2'>
+        <AccordionM1 title={"Todas as Despesas"} children={
+          <div className='w-full overflow-x-auto'>
+            <table className='table-auto min-w-full'>
+              <thead>
+                <tr>
+                  <th className='hidden'>_id</th>
+                  <th className='py-2 px-4 border-b'>hora</th>
+                  <th className='py-2 px-4 border-b'>nome jogador</th>
+                  <th className='py-2 px-4 border-b'>despesa</th>
+                  <th className='py-2 px-4 border-b'>valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {financeiro.length > 0 && (
+                  financeiro.map((despesa: any) => {
+                    const criado = (despesa.createdAt).split(' ')
+
+                    return (
+                      <tr className='whitespace-nowrap'>
+                        <td className='hidden'>{despesa._id}</td>
+                        <td className='py-2 px-4 border-b whitespace-nowrap'>{criado[1]}</td>
+                        <td className='py-2 px-4 border-b whitespace-nowrap'>{despesa.nome_jogador}</td>
+                        <td className='py-2 px-4 border-b whitespace-nowrap'>{despesa.nome_despesa}</td>
+                        <td className='py-2 px-4 border-b whitespace-nowrap'>{despesa.valor}</td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        } />
+      </div>
+
+      <div className='hidden p-2'>
         <AccordionM1 title={"Despesa Compartilhada"} children={
           <>
-            <TextInputM2 disabled={false} label='Nome da Despesa' name='despesa' onChange={(e: any) => setNomeDespesa(e.target.value)} value={nomeDespesa} />
-            <SelectInputM2 label='Quem pagou' name='quem-pagou' onChange={(e: any) => setNomeJogadorDespesa(e.target.value)} value={nomeJogadorDespesa}
-              options={players.map(player => ({ value: player.nome, option: player._id as unknown as string }))} />
-            <MoneyInput disabled={false} label='Valor Total' name='valor-total' onChange={handleValue} value={formatValue(valorDespesa)} />
-            <hr />
-            <p className='mt-2 text-center'>Divisão por Jogador</p>
-            <EditableTable players={players.map(player => ({ value: player.nome, option: player._id as unknown as string }))} />
+            {jogadores != undefined && (
+              <>
+                <TextInputM2 disabled={false} label='Nome da Despesa' name='despesa' onChange={(e: any) => setNomeDespesa(e.target.value)} value={nomeDespesa} />
+                <SelectInputM2 label='Quem pagou' name='quem-pagou' onChange={(e: any) => setNomeJogadorDespesa(e.target.value)} value={nomeJogadorDespesa}
+                  options={jogadores.map((player: any) => ({ value: player.nome_jogador, option: player._id as unknown as string }))} />
+                <MoneyInput disabled={false} label='Valor Total' name='valor-total' onChange={handleValue} value={formatValue(valorDespesa)} />
+                <hr />
+                <p className='mt-2 text-center'>Divisão por Jogador</p>
+                <EditableTable jogadores={jogadores.map((player: any) => ({ value: player.nome_jogador, option: player._id as unknown as string }))} />
+              </>
+            )}
           </>
         } />
       </div>
@@ -122,7 +215,7 @@ export default function Home() {
   )
 }
 
-const EditableTable = ({ players }: any) => {
+const EditableTable = ({ jogadores }: any) => {
   const [rows, setRows] = useState([{ nome: '', valor: '' }]);
 
   useEffect(() => {
@@ -160,7 +253,7 @@ const EditableTable = ({ players }: any) => {
                   onChange={(e) => handleChange(index, 'nome', e.target.value)}
                 >
                   <option value="">Selecione um jogador</option>
-                  {players.map((player: any, playerIndex: any) => (
+                  {jogadores.map((player: any, playerIndex: any) => (
                     <option key={playerIndex} value={player.option}>
                       {player.value}
                     </option>

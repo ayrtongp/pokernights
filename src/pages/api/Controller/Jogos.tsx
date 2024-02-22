@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
 
       if (req.query.type === 'getAll') {
         try {
-          const documents = await mainCollection.find().sort({ createdAt: 1 }).toArray();
+          const documents = await mainCollection.find().sort({ createdAt: -1 }).toArray();
           return res.status(200).json(documents);
         } catch (err) {
           console.error(err)
@@ -109,20 +109,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
       break;
 
     case 'DELETE':
-      try {
-        const myObjectId = new ObjectId(req.query.id as unknown as ObjectId);
-        const url = `SinaisVitaisController?id=${req.query.id}`
-        const result = await mainCollection.deleteOne({ _id: myObjectId });
+      if (req.query.type === 'deleteGame') {
+        try {
+          const myObjectId = new ObjectId(req.query.jogoId as unknown as ObjectId);
+          const result = await mainCollection.deleteOne({ _id: myObjectId });
 
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ message: 'Residente não encontrado!', });
+          if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Jogo não encontrado!', });
+          }
+
+          return res.status(201).json({ message: 'Jogo deletado com sucesso', method: 'DELETE' });
+        } catch (err) {
+          return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
         }
-
-        return res.status(201).json({ message: 'Residente deletado com sucesso', method: 'DELETE' });
-      } catch (err) {
-
-        return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
       }
+
       break;
 
     default:

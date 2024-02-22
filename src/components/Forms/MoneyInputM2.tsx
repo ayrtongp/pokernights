@@ -4,7 +4,7 @@ import React from 'react';
 interface MoneyInputProps {
   label: string;
   name: string;
-  value: string; // Alterado para number para facilitar o manuseio de valores monetários
+  value: number; // Alterado para number para facilitar o manuseio de valores monetários
   disabled: boolean;
   onChange: (e: any) => void; // Alterado para facilitar a atualização do estado no componente pai
 }

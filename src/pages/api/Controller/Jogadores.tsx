@@ -74,7 +74,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
             createdAt: getCurrentDateTime(),
             updatedAt: getCurrentDateTime(),
           }
-          console.log(data)
           // Verifica se todos os campos necessários estão presentes no req.body
           const requiredFields = ['nome_jogador', 'jogo_id'];
           const missingFields = requiredFields.filter(field => !data[field]);
@@ -130,20 +129,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
       break;
 
     case 'DELETE':
-      try {
-        const myObjectId = new ObjectId(req.query.id as unknown as ObjectId);
-        const url = `SinaisVitaisController?id=${req.query.id}`
-        const result = await mainCollection.deleteOne({ _id: myObjectId });
 
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ message: 'Residente não encontrado!', });
+      if (req.query.type === 'deleteGame') {
+        try {
+          const jogoId = req.query.jogoId as string
+          const result = await mainCollection.deleteMany({ jogo_id: jogoId });
+
+          if (result.deletedCount === 0) {
+            return res.status(202).json({ message: 'Nenhum valor deletado!', });
+          }
+
+          return res.status(201).json({ message: 'Jogadores deletado com sucesso', method: 'DELETE' });
+        } catch (err) {
+
+          return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
         }
-
-        return res.status(201).json({ message: 'Residente deletado com sucesso', method: 'DELETE' });
-      } catch (err) {
-
-        return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
       }
+
       break;
 
     default:

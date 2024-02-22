@@ -6,8 +6,7 @@ import { getCurrentDateTime } from '@/utils/functions';
 export default async function handler(req: NextApiRequest, res: NextApiResponse,) {
 
   const { db } = await connect();
-  const mainCollection = db.collection('jogadores')
-
+  const mainCollection = db.collection('financeiro')
   switch (req.method) {
     case 'GET':
 
@@ -31,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
 
       if (req.query.type === 'getGame') {
         try {
-          const documents = await mainCollection.find({ jogo_id: req.query.jogo_id }).sort({ createdAt: 1 }).toArray();
+          const documents = await mainCollection.find({ jogo_id: req.query.jogo_id }).sort({ createdAt: -1 }).toArray();
           return res.status(200).json(documents);
         } catch (err) {
           console.error(err)
@@ -69,17 +68,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
         try {
           const data = req.body
           const dataFields = {
-            nome: data['nome'],
-            valor: data['valor'],
+            nome_despesa: data['nome_despesa'],
+            nome_jogador: data['nome_jogador'],
+            valor: parseFloat(data['valor']),
             jogo_id: data['jogo_id'],
             jogador_id: data['jogador_id'],
             categoria: data['categoria'],
             createdAt: getCurrentDateTime(),
             updatedAt: getCurrentDateTime(),
           }
-          console.log(data)
           // Verifica se todos os campos necessários estão presentes no req.body
-          const requiredFields = ['nome', 'categoria', 'valor', 'jogo_id', 'jogador_id'];
+          const requiredFields = ['nome_despesa', 'nome_jogador', 'categoria', 'valor', 'jogo_id', 'jogador_id'];
           const missingFields = requiredFields.filter(field => !data[field]);
 
           if (missingFields.length > 0) {
@@ -128,20 +127,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
       break;
 
     case 'DELETE':
-      try {
-        const myObjectId = new ObjectId(req.query.id as unknown as ObjectId);
-        const url = `SinaisVitaisController?id=${req.query.id}`
-        const result = await mainCollection.deleteOne({ _id: myObjectId });
+      if (req.query.type === 'deleteGame') {
+        try {
+          const jogoId = req.query.jogoId as string
+          const result = await mainCollection.deleteMany({ jogo_id: jogoId });
 
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ message: 'Residente não encontrado!', });
+          if (result.deletedCount === 0) {
+            return res.status(202).json({ message: 'Nenhum valor deletado!', });
+          }
+
+          return res.status(201).json({ message: 'Financeiro deletado com sucesso', method: 'DELETE' });
+        } catch (err) {
+
+          return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
         }
-
-        return res.status(201).json({ message: 'Residente deletado com sucesso', method: 'DELETE' });
-      } catch (err) {
-
-        return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
       }
+
       break;
 
     default:
