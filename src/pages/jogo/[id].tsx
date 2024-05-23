@@ -49,7 +49,7 @@ export default function Home() {
 
   const handleCapture = () => {
 
-    const container1 = document.getElementById('teste');
+    const container1 = document.getElementById('teste') as any;
     const container2 = document.getElementById('tabela-jogadores');
     const container3 = document.getElementById('tabelaFinanceira');
 
@@ -193,7 +193,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
       </div>
 
-      <div id='teste' className='max-w-lg text-center mx-auto my-10'>
+      <div id='teste' className='max-w-lg text-center mx-auto my-10 p-10'>
         {jogadores && (
           <PokerTable jogadores={jogadores} financeiro={financeiro} onAddFichasSuccess={handleAddFichasSuccess} />
         )}
@@ -235,8 +235,6 @@ export default function Home() {
       <div className='p-2'>
         <AccordionM1 title={"Todas as Despesas"} children={
           <div>
-            <button onClick={handleCapture}>Gerar Print</button>
-
             <div className='my-2'>
               <ul className='flex flex-wrap gap-2 text-xs'>
                 <li onClick={handleResetFiltro} className={`px-2 py-1 rounded-md border ${nomeFiltrado == '' ? 'bg-blue-400' : 'bg-gray-100'}`} >Sem Filtro</li>
@@ -291,6 +289,10 @@ export default function Home() {
           } />
         </div>
       )}
+
+      <div className='text-center mt-5 pb-5'>
+        <button className='px-3 py-2 bg-blue-300 border-blue-600 rounded-md shadow-md' onClick={handleCapture}>Gerar Relatório</button>
+      </div>
 
     </div>
 
