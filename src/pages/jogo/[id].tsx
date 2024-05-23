@@ -13,6 +13,7 @@ import { Financeiro_deleteId, Financeiro_getGame } from '@/actions/Financeiro';
 import CurrencyInput, { formatValue } from 'react-currency-input-field';
 import { FaPlus } from 'react-icons/fa';
 import DespesaCompartilhada from '@/components/Poker/DespesaCompartilhada';
+import html2canvas from 'html2canvas';
 
 interface DespesaComp {
   valor: number;
@@ -32,6 +33,53 @@ export default function Home() {
 
   const [financeiroFiltrado, setFinanceiroFiltrado] = useState(financeiro);
   const [nomeFiltrado, setNomeFiltrado] = useState<string>('');
+
+  // const handleCapture = () => {
+  //   const table = document.getElementById('tabelaFinanceira');
+  //   html2canvas(table as any).then((canvas: any) => {
+  //     // Convertendo o canvas para imagem
+  //     const imgData = canvas.toDataURL('image/png');
+  //     // Criando um link temporário para download da imagem
+  //     const link = document.createElement('a');
+  //     link.href = imgData;
+  //     link.download = 'tabela.png';
+  //     link.click();
+  //   });
+  // };
+
+  const handleCapture = () => {
+
+    const container1 = document.getElementById('teste');
+    const container2 = document.getElementById('tabela-jogadores');
+    const container3 = document.getElementById('tabelaFinanceira');
+
+    // Capturando as tabelas individualmente
+    html2canvas(container1 as any, { scale: 2 }).then(canvas1 => {
+      html2canvas(container2 as any).then(canvas2 => {
+        html2canvas(container3 as any).then(canvas3 => {
+          // Combinando as imagens em uma única imagem
+          const combinedCanvas = document.createElement('canvas');
+          const context = combinedCanvas.getContext('2d') as any;
+          const padding = 20; // Espaçamento entre as tabelas
+          combinedCanvas.width = Math.max(canvas1.width, canvas2.width, canvas3.width);
+          combinedCanvas.height = canvas1.height + canvas2.height + canvas3.height + (2 * padding);
+          context.drawImage(canvas1, 0, 0);
+          context.drawImage(canvas2, 0, canvas1.height + padding);
+          context.drawImage(canvas3, 0, canvas1.height + canvas2.height + (2 * padding));
+
+          // Convertendo o canvas combinado para imagem
+          const imgData = combinedCanvas.toDataURL('image/png');
+
+          // Criando um link temporário para download da imagem
+          const link = document.createElement('a');
+          link.href = imgData;
+          link.download = 'tabelas.png';
+          link.click();
+        });
+      });
+    });
+  };
+
 
   const handleFilterJogador = (e: any) => {
     const filtered = financeiro.filter((value: any) => value.nome_jogador == e.target.innerText)
@@ -145,7 +193,7 @@ export default function Home() {
         <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
       </div>
 
-      <div className='max-w-lg text-center mx-auto my-10'>
+      <div id='teste' className='max-w-lg text-center mx-auto my-10'>
         {jogadores && (
           <PokerTable jogadores={jogadores} financeiro={financeiro} onAddFichasSuccess={handleAddFichasSuccess} />
         )}
@@ -187,6 +235,7 @@ export default function Home() {
       <div className='p-2'>
         <AccordionM1 title={"Todas as Despesas"} children={
           <div>
+            <button onClick={handleCapture}>Gerar Print</button>
 
             <div className='my-2'>
               <ul className='flex flex-wrap gap-2 text-xs'>
@@ -201,7 +250,7 @@ export default function Home() {
             </div>
 
             <div className='w-full overflow-x-auto'>
-              <table className='table-auto min-w-full bg-white text-xs'>
+              <table id='tabelaFinanceira' className='table-auto min-w-full bg-white text-xs'>
                 <thead>
                   <tr className='bg-black text-white font-bold'>
                     <th className='hidden'>_id</th>
