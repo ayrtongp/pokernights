@@ -114,7 +114,7 @@ const DespesaCompartilhada = ({ jogadores, jogoId, triggerFetch }: Props) => {
         return (
             <div>
                 <TextInputM2 disabled={false} label='Nome da Despesa' name='despesa' onChange={(e: any) => setNomeDespesa(e.target.value)} value={nomeDespesa} />
-                <SelectInputM2 label='Quem pagou' name='quem-pagou' onChange={handleSelectInput} value={nomeJogadorDespesa}
+                <SelectInputM2 label='Quem pagou' name='quem-pagou' onChange={handleSelectInput} value={idJogadorDespesa}
                     options={jogadores.map((player: any) => ({ value: player.nome_jogador, option: player._id as unknown as string }))} />
                 <CurrencyInput value={valorDespesa} onValueChange={(e: any) => setValorDespesa(e)} intlConfig={{ locale: 'pt-BR', currency: 'BRL' }} className='my-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' />
                 <hr />
