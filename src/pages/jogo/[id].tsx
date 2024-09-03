@@ -143,13 +143,13 @@ export default function Home() {
             return acc;
           }, 0); // Inicializa o acumulador com 0
           const despesas = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas" && financeiro.nome_despesa != 'Final') {
+            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas") {
               return acc + financeiro.valor; // Assumindo que `valor` é um número
             }
             return acc;
           }, 0); // Inicializa o acumulador com 0
           const fichasFinal = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas" && financeiro.nome_despesa == 'Final') {
+            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Cash out") {
               return acc + financeiro.valor; // Assumindo que `valor` é um número
             }
             return acc;
@@ -190,7 +190,7 @@ export default function Home() {
       {/* <RoundedButton /> */}
 
       <div className='text-center'>
-        <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
+        {/* <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1> */}
       </div>
 
       <div id='teste' className='max-w-lg text-center mx-auto my-10 p-10'>

@@ -8,6 +8,9 @@ import Financeiro_addFichas from '@/actions/Financeiro_addFichas';
 import { useRouter } from 'next/router';
 import { notifySuccess } from '@/utils/functions';
 import CurrencyInput from 'react-currency-input-field';
+import { NumericFormat } from 'react-number-format';
+import SelectInputM2 from '../Forms/SelectInputM2';
+import { sendMessage } from '@/pages/api/WhatsApp';
 
 interface Jogador {
   nome_jogador: string;
@@ -22,32 +25,53 @@ interface PokerTableProps {
   onAddFichasSuccess: any; // Tipo para o array de jogadores, assumindo que cada jogador é representado por uma string
 }
 
+interface Value {
+  nome_despesa: string;
+  valor: number;
+  jogo_id: string;
+  jogador_id: string;
+  categoria: string;
+  nome_jogador: string
+}
+
 const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFichasSuccess }) => {
 
   const router = useRouter();
   const { id } = router.query
+
+  const optionsCategoria = [
+    { option: 'Fichas', value: 'Fichas' },
+    { option: 'Despesas', value: 'Despesas' },
+    { option: 'Cash out', value: 'Cash out' },
+  ]
+
+  const initialNewValue: Value = {
+    categoria: '', jogador_id: '', jogo_id: '', nome_despesa: '', nome_jogador: '', valor: 0
+  }
 
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [selectedJogador, setSelectedJogador] = useState<any>({});
   const [novaDespesa, setNovaDespesa] = useState<number>(0);
   const [novaDespesa2, setNovaDespesa2] = useState<number>(0);
   const [descricaoDespesa, setDescricaoDespesa] = useState('');
-
+  const [newValue, setNewValue] = useState<Value>(initialNewValue);
+  console.log(financeiro)
   const handleCloseModal = () => {
     setIsOpen(false)
   }
 
   const handleAddDespesa = async () => {
     const body = {
-      nome_despesa: descricaoDespesa,
-      valor: novaDespesa,
+      nome_despesa: newValue.nome_despesa,
+      valor: newValue.valor,
       jogo_id: id,
       jogador_id: selectedJogador._id,
-      categoria: "Despesas",
+      categoria: newValue.categoria,
       nome_jogador: selectedJogador.nome_jogador,
     }
     const { data: result, responseOk: resOk } = await Financeiro_addFichas(body);
     if (resOk) {
+      setNewValue(initialNewValue)
       setSelectedJogador({})
       setIsOpen(false)
       setDescricaoDespesa('')
@@ -72,11 +96,32 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
       setIsOpen(false)
       notifySuccess("Fichas Adicionadas")
       onAddFichasSuccess();
+
+      const fichasJogador = financeiro.filter((ficha: any) => ficha.categoria === 'Fichas' && ficha.nome_jogador === selectedJogador.nome_jogador);
+      console.log(fichasJogador)
+      const totalValor = fichasJogador.reduce((acc: any, ficha: any) => acc + ficha.valor, 0);
+      console.log(totalValor)
+      const cacifesComprados = (totalValor * -1) / 20;
+      console.log(cacifesComprados)
+      if (cacifesComprados > 1) {
+        console.log('oi')
+        const mensagem = `${selectedJogador.nome_jogador} acabou de comprar um cacife mais um cacife.\n Total de Cacifes: ${cacifesComprados}`
+        const wppMessage = await sendMessage("5521997759990", mensagem)
+        console.log(wppMessage)
+      }
     }
   }
 
+  const handleChangeNewValue = (e: any) => {
+    const { name, value } = e.target;
+    setNewValue((prevState: Value) => ({
+      ...prevState,
+      [name]: value
+    }));
+  }
+
   const handleChangeDespesa = (e: any) => {
-    setNovaDespesa(e.target.value)
+    setNovaDespesa(e.floatValue as number)
   }
 
   const handleChangeDescricao = (e: any) => {
@@ -109,12 +154,11 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
             Adicionar Fichas
           </div>
           <div className='flex flex-col gap-1 border shadow-md p-2'>
-            <TextInputM2 disabled={false} label='Descrição' name='descricao' onChange={handleChangeDescricao} value={descricaoDespesa} />
-            <CurrencyInput value={novaDespesa2} intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}/>
-            <MoneyInput disabled={false} label='Adionar Despesa' name='addDespesa' onChange={handleChangeDespesa} value={novaDespesa} />
-            <div onClick={handleAddDespesa}
-              className='px-3 py-2 bg-green-600 text-white font-bold'>
-              Adicionar Outra Despesa
+            <TextInputM2 disabled={false} label='Descrição' name='nome_despesa' onChange={handleChangeNewValue} value={newValue.nome_despesa} />
+            <SelectInputM2 label='Categoria' name='categoria' onChange={handleChangeNewValue} options={optionsCategoria} value={newValue.categoria} />
+            <MoneyInput disabled={false} label='Adionar Despesa' name='valor' onChange={handleChangeNewValue} value={newValue.valor} />
+            <div onClick={handleAddDespesa} className='px-3 py-2 bg-green-600 text-white font-bold'>
+              Adicionar
             </div>
           </div>
         </div>
@@ -142,7 +186,7 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
               transformOrigin: 'center',
             }}
           >
-            <span className="text-white font-bold text-xs">{formatToBRL(somaValor)}</span>
+            <span className="text-white font-bold text-xs">{somaValor.toString().replace('.', ',')}</span>
             <span className=" text-xs whitespace-nowra font-bold text-black-800">{jogador.nome_jogador}</span>
           </div>
         )

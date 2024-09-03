@@ -4,6 +4,7 @@ import SelectInputM2 from '../Forms/SelectInputM2';
 import CurrencyInput from 'react-currency-input-field';
 import { notifyError, notifySuccess } from '@/utils/functions';
 import Financeiro_POST_despesaCompartilhada from '@/actions/Financeiro';
+import { NumericFormat } from 'react-number-format';
 
 interface Props {
     jogadores: Jogador[];
@@ -63,20 +64,20 @@ const DespesaCompartilhada = ({ jogadores, jogoId, triggerFetch }: Props) => {
 
     const handleAddDespesaCompartilhada = async (e: any) => {
         e.preventDefault();
-
+        console.log(nomeJogadorDespesa, valorDespesa, nomeDespesa)
         if (nomeJogadorDespesa != '' && nomeJogadorDespesa != undefined && valorDespesa > 0 && nomeDespesa != '') {
 
             const objDespesa = despesaCompartilhada.map(item => ({
                 ...item,
                 nome_despesa: "- " + nomeDespesa,
                 categoria: "Despesas",
-                valor: item.valor.toString() != '0' ? parseFloat(item.valor.toString().replaceAll(',', ';')) * -1 : 0
+                valor: item.valor * -1
             }));
 
             // Create a new object for the despesa to be added
             const newDespesa = {
                 nome_jogador: nomeJogadorDespesa,
-                valor: parseFloat(valorDespesa.toString().replaceAll(',', '.')),
+                valor: valorDespesa,
                 nome_despesa: "+ " + nomeDespesa,
                 categoria: "Despesas",
                 jogador_id: idJogadorDespesa,
@@ -116,8 +117,12 @@ const DespesaCompartilhada = ({ jogadores, jogoId, triggerFetch }: Props) => {
                 <TextInputM2 disabled={false} label='Nome da Despesa' name='despesa' onChange={(e: any) => setNomeDespesa(e.target.value)} value={nomeDespesa} />
                 <SelectInputM2 label='Quem pagou' name='quem-pagou' onChange={handleSelectInput} value={idJogadorDespesa}
                     options={jogadores.map((player: any) => ({ value: player.nome_jogador, option: player._id as unknown as string }))} />
-                <CurrencyInput value={valorDespesa} onValueChange={(e: any) => setValorDespesa(e)} intlConfig={{ locale: 'pt-BR', currency: 'BRL' }} className='my-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' />
+
+                <NumericFormat allowNegative={false} decimalSeparator=',' onValueChange={(e: any) => setValorDespesa(e.floatValue)} decimalScale={2}
+                    className='my-2 shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline' />
+
                 <hr />
+
                 <p className='mt-2 text-center'>Divisão por Jogador</p>
                 <div className='overflow-x-auto text-center w-full'>
                     <table className='table-auto mx-auto'>
@@ -134,15 +139,22 @@ const DespesaCompartilhada = ({ jogadores, jogoId, triggerFetch }: Props) => {
                                     <td className='hidden'>{player._id}</td>
                                     <td className='p-1 text-left'>{player.nome_jogador}</td>
                                     <td className='p-1 text-right'>
-                                        <CurrencyInput value={despesaCompartilhada.find(item => item.nome_jogador === player.nome_jogador)?.valor || 0}
-                                            onValueChange={(e: any) => handleChangeDes(e, player)}
-                                            intlConfig={{ locale: 'pt-BR', currency: 'BRL' }}
+                                        <NumericFormat value={despesaCompartilhada.find(item => item.nome_jogador === player.nome_jogador)?.valor || null}
+                                            onValueChange={(e: any) => handleChangeDes(e.floatValue, player)}
+                                            allowNegative={false}
+                                            decimalSeparator=','
+                                            decimalScale={2}
                                             className='w-full p-1 text-right' />
                                     </td>
                                 </tr>
                             ))}
+                            <tr>
+                                <td colSpan={3}>Soma: R$ {despesaCompartilhada.reduce((a: any, b: any) => a + b.valor, 0)}</td>
+                            </tr>
                         </tbody>
                     </table>
+                </div>
+                <div>
                 </div>
                 <div className='text-white font-bold w-full text-center'>
                     <button onClick={handleAddDespesaCompartilhada} type='submit' className='mt-3 rounded-md shadow-lg border bg-blue-500 px-2 py-3 '>Adicionar Despesa</button>

@@ -1,29 +1,39 @@
-import { IncrementalCache } from 'next/dist/server/lib/incremental-cache';
 import React from 'react';
+import { NumericFormat, NumberFormatValues } from 'react-number-format';
 
 interface MoneyInputProps {
   label: string;
   name: string;
-  value: number; // Alterado para number para facilitar o manuseio de valores monetários
+  value: number; // O valor é um número para facilitar o manuseio
   disabled: boolean;
-  onChange: (e: any) => void; // Alterado para facilitar a atualização do estado no componente pai
+  onChange: (e: { target: { name: string; value: number | undefined } }) => void; // O value pode ser number ou undefined
 }
 
 const MoneyInput: React.FC<MoneyInputProps> = ({ label, name, value, onChange, disabled = false }) => {
-  // Formata o valor para o formato monetário BRL
+  // Função para lidar com a mudança de valor
+  const handleValueChange = (values: NumberFormatValues) => {
+    onChange({
+      target: {
+        name,
+        value: values.floatValue // Se floatValue for undefined, será passado como undefined
+      }
+    });
+  };
 
   return (
     <div>
       <label className="block text-gray-700 text-sm font-bold mb-1" htmlFor={name}>
         {label}
       </label>
-      <input
-        type="text"
-        name={name}
-        disabled={disabled}
+      <NumericFormat
         value={value}
-        onChange={onChange}
-        className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+        onValueChange={handleValueChange}
+        name={name}
+        allowNegative
+        decimalSeparator=','
+        decimalScale={2}
+        className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
+        disabled={disabled}
       />
     </div>
   );
