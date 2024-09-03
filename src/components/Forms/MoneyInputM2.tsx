@@ -6,7 +6,7 @@ interface MoneyInputProps {
   name: string;
   value: number; // O valor é um número para facilitar o manuseio
   disabled: boolean;
-  onChange: (e: { target: { name: string; value: number | undefined } }) => void; // O value pode ser number ou undefined
+  onChange: (e: any) => void;
 }
 
 const MoneyInput: React.FC<MoneyInputProps> = ({ label, name, value, onChange, disabled = false }) => {
