@@ -23,6 +23,7 @@ interface PokerTableProps {
   jogadores: Jogador[]; // Tipo para o array de jogadores, assumindo que cada jogador é representado por uma string
   financeiro: any; // Tipo para o array de jogadores, assumindo que cada jogador é representado por uma string
   onAddFichasSuccess: any; // Tipo para o array de jogadores, assumindo que cada jogador é representado por uma string
+  isGameActive: boolean;
 }
 
 interface Value {
@@ -34,7 +35,7 @@ interface Value {
   nome_jogador: string
 }
 
-const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFichasSuccess }) => {
+const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFichasSuccess, isGameActive }) => {
 
   const router = useRouter();
   const { id } = router.query
@@ -55,7 +56,7 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
   const [novaDespesa2, setNovaDespesa2] = useState<number>(0);
   const [descricaoDespesa, setDescricaoDespesa] = useState('');
   const [newValue, setNewValue] = useState<Value>(initialNewValue);
-  console.log(financeiro)
+
   const handleCloseModal = () => {
     setIsOpen(false)
   }
@@ -98,16 +99,11 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
       onAddFichasSuccess();
 
       const fichasJogador = financeiro.filter((ficha: any) => ficha.categoria === 'Fichas' && ficha.nome_jogador === selectedJogador.nome_jogador);
-      console.log(fichasJogador)
       const totalValor = fichasJogador.reduce((acc: any, ficha: any) => acc + ficha.valor, 0);
-      console.log(totalValor)
-      const cacifesComprados = (totalValor * -1) / 20;
-      console.log(cacifesComprados)
+      const cacifesComprados = ((totalValor * -1) / 20) + 1;
       if (cacifesComprados > 1) {
-        console.log('oi')
-        const mensagem = `${selectedJogador.nome_jogador} acabou de comprar um cacife mais um cacife.\n Total de Cacifes: ${cacifesComprados}`
-        const wppMessage = await sendMessage("5521997759990", mensagem)
-        console.log(wppMessage)
+        const mensagem = `${selectedJogador.nome_jogador} comprou um cacife.\n Total: ${cacifesComprados}`
+        const wppMessage = await sendMessage(process.env.NEXT_PUBLIC_POKERGROUP as string, mensagem)
       }
     }
   }
@@ -129,12 +125,14 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
   }
 
   const handleClickJogador = (e: any) => {
-    setIsOpen(true)
-    const JogadorId = e.currentTarget.dataset.jogadorid
-    const jogadorSelecionado = jogadores.find(jogador => jogador._id === JogadorId);
+    if (isGameActive) {
+      setIsOpen(true)
+      const JogadorId = e.currentTarget.dataset.jogadorid
+      const jogadorSelecionado = jogadores.find(jogador => jogador._id === JogadorId);
 
-    if (jogadorSelecionado) {
-      setSelectedJogador(jogadorSelecionado)
+      if (jogadorSelecionado) {
+        setSelectedJogador(jogadorSelecionado)
+      }
     }
   }
 
@@ -179,8 +177,7 @@ const PokerTable: React.FC<PokerTableProps> = ({ jogadores, financeiro, onAddFic
             onClick={handleClickJogador}
             data-jogadorid={jogador._id}
             key={index}
-            className="absolute h-16 w-16 bg-blue-500 rounded-full flex flex-col justify-center
-          cursor-pointer items-center"
+            className={`absolute h-16 w-16 bg-blue-500 rounded-full flex flex-col justify-center items-center ${isGameActive ? 'cursor-pointer' : 'cursor-not-allowed'}`}
             style={{
               transform: `rotate(${angle * index}deg) translate(8rem) rotate(-${angle * index}deg)`,
               transformOrigin: 'center',

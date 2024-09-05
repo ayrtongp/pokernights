@@ -11,4 +11,5 @@
 body {
   color: rgb(var(--foreground-rgb));
   font-size: 12px;
+  background-color: rgb(220 252 231);
 }

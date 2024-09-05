@@ -29,3 +29,10 @@ export function notifySuccess(success) {
     closeOnClick: true, pauseOnHover: false, progress: undefined, theme: "light",
   });
 }
+
+export function formatDateBRL(date) {
+  const newDate = date.split(' ')
+  const [year, month, day] = newDate[0].split('-')
+  const [hour, minute, second] = newDate[1].split(':')
+  return `${day}/${month}/${year} ${hour}:${minute}`
+}

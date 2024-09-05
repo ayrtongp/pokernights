@@ -1,5 +1,3 @@
-import MoneyInput from '@/components/Forms/MoneyInputM2';
-import SelectInputM2 from '@/components/Forms/SelectInputM2';
 import TextInputM2 from '@/components/Forms/TextInputM2'
 import PokerTable from '@/components/Poker/PokerTable'
 import TabelaPadrao from '@/components/Tabelas/TabelaPadrao';
@@ -14,10 +12,22 @@ import CurrencyInput, { formatValue } from 'react-currency-input-field';
 import { FaPlus } from 'react-icons/fa';
 import DespesaCompartilhada from '@/components/Poker/DespesaCompartilhada';
 import html2canvas from 'html2canvas';
+import { sendImage } from '../api/WhatsApp';
+import { Jogos_closeGame, Jogos_isGameActive } from '@/actions/Jogos';
 
-interface DespesaComp {
-  valor: number;
+interface Jogador {
+  _id: string
+
+  createdAt?: string;
+  updatedAt?: string;
+  saldoFichas: number;
+
+  despesas: string;
+  fichas: string;
+  fichasFinal: string;
+  jogo_id: string;
   nome_jogador: string;
+  saldo: string;
 }
 
 export default function Home() {
@@ -27,57 +37,25 @@ export default function Home() {
   const [triggerFetch, setTriggerFetch] = useState(false);
   const [jogadores, setJogadores] = useState([]);
   const [financeiro, setFinanceiro] = useState([]);
-  const [tableJogadores, setTableJogadores] = useState();
-
+  const [tableJogadores, setTableJogadores] = useState<Jogador[]>();
+  const [gameActive, setGameActive] = useState<boolean>(false);
   const [novoJogador, setNovoJogador] = useState('');
 
   const [financeiroFiltrado, setFinanceiroFiltrado] = useState(financeiro);
   const [nomeFiltrado, setNomeFiltrado] = useState<string>('');
 
-  // const handleCapture = () => {
-  //   const table = document.getElementById('tabelaFinanceira');
-  //   html2canvas(table as any).then((canvas: any) => {
-  //     // Convertendo o canvas para imagem
-  //     const imgData = canvas.toDataURL('image/png');
-  //     // Criando um link temporário para download da imagem
-  //     const link = document.createElement('a');
-  //     link.href = imgData;
-  //     link.download = 'tabela.png';
-  //     link.click();
-  //   });
-  // };
+  // #################################
+  // #################################
+  // HANDLERS
+  // #################################
+  // #################################
 
-  const handleCapture = () => {
-
-    const container1 = document.getElementById('teste') as any;
-    const container2 = document.getElementById('tabela-jogadores');
-    const container3 = document.getElementById('tabelaFinanceira');
-
-    // Capturando as tabelas individualmente
-    html2canvas(container1 as any, { scale: 2 }).then(canvas1 => {
-      html2canvas(container2 as any).then(canvas2 => {
-        html2canvas(container3 as any).then(canvas3 => {
-          // Combinando as imagens em uma única imagem
-          const combinedCanvas = document.createElement('canvas');
-          const context = combinedCanvas.getContext('2d') as any;
-          const padding = 20; // Espaçamento entre as tabelas
-          combinedCanvas.width = Math.max(canvas1.width, canvas2.width, canvas3.width);
-          combinedCanvas.height = canvas1.height + canvas2.height + canvas3.height + (2 * padding);
-          context.drawImage(canvas1, 0, 0);
-          context.drawImage(canvas2, 0, canvas1.height + padding);
-          context.drawImage(canvas3, 0, canvas1.height + canvas2.height + (2 * padding));
-
-          // Convertendo o canvas combinado para imagem
-          const imgData = combinedCanvas.toDataURL('image/png');
-
-          // Criando um link temporário para download da imagem
-          const link = document.createElement('a');
-          link.href = imgData;
-          link.download = 'tabelas.png';
-          link.click();
-        });
-      });
-    });
+  const handleCapture = async () => {
+    const imgData = await generateCanvasBase64();
+    if (tableJogadores) {
+      const caption = rankearJogadores(tableJogadores)
+      await sendImage(process.env.NEXT_PUBLIC_POKERGROUP as string, imgData.split(',')[1], caption)
+    }
   };
 
 
@@ -119,62 +97,26 @@ export default function Home() {
     }
   }
 
+  const handleFinishGame = async () => {
+    const confirmation = window.confirm('Tem certeza que deseja encerrar o jogo?')
+
+    if (confirmation) {
+      const closeGame = await Jogos_closeGame(id as string)
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
       if (id != undefined && id != null) {
+        const isGameActive = await Jogos_isGameActive(id as string);
+        setGameActive(isGameActive.aberto === 'S')
         const getJogadores = await Jogadores_getGame(id as string)
         const { data: getFinanceiro, responseOk: res1 } = await Financeiro_getGame(id as string);
         setJogadores(getJogadores)
         setFinanceiro(getFinanceiro)
         setFinanceiroFiltrado(getFinanceiro)
 
-        const tabelaJogadores = getJogadores.map((jogador: any, index: any) => {
-          // Calcula o saldo de cada jogador
-          const saldo = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id) {
-              return acc + financeiro.valor; // Assumindo que `valor` é um número
-            }
-            return acc;
-          }, 0); // Inicializa o acumulador com 0
-          const fichas = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Fichas") {
-              return acc + financeiro.valor; // Assumindo que `valor` é um número
-            }
-            return acc;
-          }, 0); // Inicializa o acumulador com 0
-          const despesas = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas") {
-              return acc + financeiro.valor; // Assumindo que `valor` é um número
-            }
-            return acc;
-          }, 0); // Inicializa o acumulador com 0
-          const fichasFinal = getFinanceiro.reduce((acc: any, financeiro: any) => {
-            if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Cash out") {
-              return acc + financeiro.valor; // Assumindo que `valor` é um número
-            }
-            return acc;
-          }, 0); // Inicializa o acumulador com 0
-
-          // Retorna um novo objeto jogador com o saldo adicionado
-          return {
-            ...jogador,
-            saldo: formatValue({ value: saldo.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
-            fichas: formatValue({ value: fichas.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
-            despesas: formatValue({ value: despesas.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
-            fichasFinal: formatValue({ value: fichasFinal.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
-          };
-        })
-
-        // Adiciona a última linha
-        const ultimaLinha = {
-          nome_jogador: "Total",
-          saldo: formatterBRL(getFinanceiro.reduce((total: any, fin: any) => total + fin.valor, 0)),
-          fichas: formatterBRL(getFinanceiro.filter((fin: any) => fin.nome_despesa === 'Compra de Fichas').reduce((total: any, fin: any) => total + fin.valor, 0)),
-          despesas: formatterBRL(getFinanceiro.filter((fin: any) => fin.nome_despesa !== 'Final' && fin.nome_despesa !== 'Compra de Fichas').reduce((total: any, fin: any) => total + fin.valor, 0)),
-          fichasFinal: formatterBRL(getFinanceiro.filter((fin: any) => fin.nome_despesa === 'Final').reduce((total: any, fin: any) => total + fin.valor, 0)),
-        };
-
-        tabelaJogadores.push(ultimaLinha);
+        const tabelaJogadores = montarTabelaJogadores(getJogadores, getFinanceiro)
 
         setTableJogadores(tabelaJogadores)
       }
@@ -190,27 +132,29 @@ export default function Home() {
       {/* <RoundedButton /> */}
 
       <div className='text-center'>
-        {/* <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1> */}
+        <h1 className="text-4xl font-bold text-center shadow-lg">Poker Night</h1>
       </div>
 
       <div id='teste' className='max-w-lg text-center mx-auto my-10 p-10'>
         {jogadores && (
-          <PokerTable jogadores={jogadores} financeiro={financeiro} onAddFichasSuccess={handleAddFichasSuccess} />
+          <PokerTable jogadores={jogadores} financeiro={financeiro} onAddFichasSuccess={handleAddFichasSuccess} isGameActive={gameActive} />
         )}
       </div>
 
-      <div className='p-2'>
-        <AccordionM1 title={"Adicionar Jogador"} children={
-          <form onSubmit={handleAddJogador} className='flex flex-row justify-center mt-5 p-2 items-center gap-2 bg-gray-100 '>
-            <div className='border rounded-md shadow-md max-w-[300px] p-2 bg-white'>
-              <TextInputM2 disabled={false} label='Nome do Jogador' name='nome_jogador' onChange={(e: any) => setNovoJogador(e.target.value)} value={novoJogador} />
-            </div>
-            <div className='text-white font-bold w-full text-center'>
-              <button type='submit' className='rounded-md shadow-lg border bg-blue-500 px-2 py-3 '>Adicionar Jogador</button>
-            </div>
-          </form>
-        } />
-      </div>
+      {gameActive && (
+        <div className='p-2'>
+          <AccordionM1 title={"Adicionar Jogador"} children={
+            <form onSubmit={handleAddJogador} className='flex flex-row justify-center mt-5 p-2 items-center gap-2 bg-gray-100 '>
+              <div className='border rounded-md shadow-md max-w-[300px] p-2 bg-white'>
+                <TextInputM2 disabled={false} label='Nome do Jogador' name='nome_jogador' onChange={(e: any) => setNovoJogador(e.target.value)} value={novoJogador} />
+              </div>
+              <div className='text-white font-bold w-full text-center'>
+                <button type='submit' className='rounded-md shadow-lg border bg-blue-500 px-2 py-3 '>Adicionar Jogador</button>
+              </div>
+            </form>
+          } />
+        </div>
+      )}
 
       <div className='p-2'>
         <AccordionM1 title={"Tabela de Jogadores"} children={
@@ -234,7 +178,7 @@ export default function Home() {
 
       <div className='p-2'>
         <AccordionM1 title={"Todas as Despesas"} children={
-          <div>
+          <div className=''>
             <div className='my-2'>
               <ul className='flex flex-wrap gap-2 text-xs'>
                 <li onClick={handleResetFiltro} className={`px-2 py-1 rounded-md border ${nomeFiltrado == '' ? 'bg-blue-400' : 'bg-gray-100'}`} >Sem Filtro</li>
@@ -282,7 +226,7 @@ export default function Home() {
         } />
       </div>
 
-      {id != undefined && typeof id === 'string' && (
+      {gameActive && id != undefined && typeof id === 'string' && (
         <div className='p-2'>
           <AccordionM1 title={"Despesa Compartilhada"} children={
             <DespesaCompartilhada jogadores={jogadores} jogoId={id} triggerFetch={setTriggerFetch} />
@@ -290,15 +234,24 @@ export default function Home() {
         </div>
       )}
 
-      <div className='text-center mt-5 pb-5'>
-        <button className='px-3 py-2 bg-blue-300 border-blue-600 rounded-md shadow-md' onClick={handleCapture}>Gerar Relatório</button>
-      </div>
+      {gameActive && (
+        <div className='text-center mt-5 pb-5 flex flex-row gap-2 justify-center'>
+          <button className='px-3 py-2 bg-blue-300 border-blue-600 rounded-md shadow-md' onClick={handleCapture}>Gerar Relatório</button>
+          <button className='px-3 py-2 bg-blue-300 border-blue-600 rounded-md shadow-md' onClick={handleFinishGame}>Encerrar</button>
+        </div>
+      )}
 
     </div>
 
 
   )
 }
+
+// #################################
+// #################################
+// COMPONENTS
+// #################################
+// #################################
 
 const EditableTable = ({ jogadores }: any) => {
   const [rows, setRows] = useState([{ nome: '', valor: '' }]);
@@ -371,7 +324,117 @@ const RoundedButton = () => {
   )
 }
 
+// #################################
+// #################################
+// FUNCTIONS
+// #################################
+// #################################
+
 function formatterBRL(valor: number) {
   const novoValor = formatValue({ value: valor.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, })
   return novoValor
+}
+
+async function generateCanvasBase64(): Promise<string> {
+  const container1 = document.getElementById('teste') as HTMLElement;
+  const container2 = document.getElementById('tabela-jogadores') as HTMLElement;
+  const container3 = document.getElementById('tabelaFinanceira') as HTMLElement;
+
+  // Convert HTML elements to canvas using html2canvas
+  const canvas1 = await html2canvas(container1, { scale: 2 });
+  const canvas2 = await html2canvas(container2);
+  const canvas3 = await html2canvas(container3);
+
+  // Combine the canvases into one
+  const combinedCanvas = document.createElement('canvas');
+  const context = combinedCanvas.getContext('2d') as CanvasRenderingContext2D;
+  const padding = 20; // Space between tables
+  combinedCanvas.width = Math.max(canvas1.width, canvas2.width, canvas3.width);
+  combinedCanvas.height = canvas1.height + canvas2.height + canvas3.height + (2 * padding);
+
+  context.drawImage(canvas1, 0, 0);
+  context.drawImage(canvas2, 0, canvas1.height + padding);
+  context.drawImage(canvas3, 0, canvas1.height + canvas2.height + (2 * padding));
+
+  // Convert the combined canvas to Base64 image data
+  const imgData: string = combinedCanvas.toDataURL('image/png');
+
+  // Return the Base64 data
+  return imgData;
+}
+
+function rankearJogadores(jogadores: Jogador[]): string {
+  const jogadoresClassificados = jogadores
+    .filter((a, b) => a.nome_jogador != 'Total')
+    .sort((a, b) => b.saldoFichas - a.saldoFichas);
+
+  const ranking = jogadoresClassificados.map((jogador, index) => {
+    if (index === 0) {
+      return `${index + 1} - ${jogador.nome_jogador}: ${jogador.saldoFichas} 👑`;
+    }
+    else if (index === jogadoresClassificados.length - 1) {
+      return `${index + 1} - ${jogador.nome_jogador}: ${jogador.saldoFichas} 💣`;
+    }
+    else {
+      return `${index + 1} - ${jogador.nome_jogador}: ${jogador.saldoFichas}`;
+    }
+  });
+
+  return ranking.join('\n')
+}
+
+function montarTabelaJogadores(jogadores: Jogador[], financas: any) {
+  const tabelaJogadores = jogadores.map((jogador: Jogador, index: number) => {
+    const saldo = financas.reduce((acc: any, financeiro: any) => {
+      if (financeiro.jogador_id === jogador._id) {
+        return acc + financeiro.valor;
+      }
+      return acc;
+    }, 0);
+    const fichas = financas.reduce((acc: any, financeiro: any) => {
+      if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Fichas") {
+        return acc + financeiro.valor;
+      }
+      return acc;
+    }, 0);
+    const despesas = financas.reduce((acc: any, financeiro: any) => {
+      if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Despesas") {
+        return acc + financeiro.valor;
+      }
+      return acc;
+    }, 0);
+    const fichasFinal = financas.reduce((acc: any, financeiro: any) => {
+      if (financeiro.jogador_id === jogador._id && financeiro.categoria === "Cash out") {
+        return acc + financeiro.valor;
+      }
+      return acc;
+    }, 0);
+    const saldoFichas = financas.reduce((acc: any, financeiro: any) => {
+      if (financeiro.jogador_id === jogador._id && (financeiro.categoria === "Cash out" || financeiro.categoria === "Fichas")) {
+        return acc + financeiro.valor;
+      }
+      return acc;
+    }, 0);
+
+    return {
+      ...jogador,
+      saldo: formatValue({ value: saldo.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
+      saldoFichas: saldoFichas,
+      fichas: formatValue({ value: fichas.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
+      despesas: formatValue({ value: despesas.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
+      fichasFinal: formatValue({ value: fichasFinal.toString(), intlConfig: { locale: 'pt-BR', currency: 'BRL' }, }),
+    };
+  })
+
+  const ultimaLinha = {
+    nome_jogador: "Total",
+    saldo: formatterBRL(financas.reduce((total: any, fin: any) => total + fin.valor, 0)),
+    fichas: formatterBRL(financas.filter((fin: any) => fin.nome_despesa === 'Compra de Fichas').reduce((total: any, fin: any) => total + fin.valor, 0)),
+    despesas: formatterBRL(financas.filter((fin: any) => fin.nome_despesa !== 'Final' && fin.nome_despesa !== 'Compra de Fichas').reduce((total: any, fin: any) => total + fin.valor, 0)),
+    fichasFinal: formatterBRL(financas.filter((fin: any) => fin.nome_despesa === 'Final').reduce((total: any, fin: any) => total + fin.valor, 0)),
+  };
+
+  tabelaJogadores.push(ultimaLinha as any);
+
+  return tabelaJogadores;
 }

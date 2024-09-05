@@ -7,6 +7,9 @@ import TextInputM2 from '@/components/Forms/TextInputM2'
 import { Jogos_deleteGame } from '@/actions/Jogos'
 import { Jogadores_deleteGame } from '@/actions/Jogadores';
 import { Financeiro_deleteGame } from '@/actions/Financeiro';
+import { formatDateBRL } from '@/utils/functions';
+import { getJSDocParameterTags } from 'typescript';
+import { sendMessage } from './api/WhatsApp';
 
 
 export default function Home() {
@@ -18,6 +21,9 @@ export default function Home() {
 
   const handleNewGame = async () => {
     const result = await Jogos_new();
+    const { id } = result
+    const message = `*Hoje Tem!:* 🃏🎲🎰 \n\n https://pokernights.vercel.app/jogo/${id}`
+    await sendMessage(process.env.NEXT_PUBLIC_POKERGROUP as string, message)
     setNovoJogo(result)
   }
 
@@ -40,11 +46,21 @@ export default function Home() {
 
   useEffect(() => {
     async function fetchData() {
-      const getJogos = await Jogos_getAll();
-      setJogos(getJogos)
+      try {
+        const getJogos = await Jogos_getAll();
+        const formatted = getJogos.map((a: any, b: number) => ({
+          ...a,
+          dataBRL: formatDateBRL(a.createdAt)
+
+        }))
+        setJogos(formatted);
+      } catch (error) {
+        console.error('Failed to fetch jogos:', error);
+      }
     }
+
     fetchData();
-  }, [novoJogo])
+  }, [novoJogo]);
 
   return (
     <main className="flex min-h-screen flex-col items-center p-24">
@@ -64,8 +80,8 @@ export default function Home() {
           id='t_jogos' resultData={jogos}
           columns={[
             { headerLabel: '_id', headerName: '_id', alignment: 'text-center' },
-            { headerLabel: 'createdAt', headerName: 'createdAt', alignment: 'text-center' },
-            { headerLabel: 'aberto', headerName: 'aberto', alignment: 'text-center' },
+            { headerLabel: 'Data', headerName: 'dataBRL', alignment: 'text-center' },
+            { headerLabel: 'Aberto', headerName: 'aberto', alignment: 'text-center' },
           ]}
           onRowClick={handleGameClick} handlePageChange={() => null} />
       </div>

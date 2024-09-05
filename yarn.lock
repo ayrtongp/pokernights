@@ -101,6 +101,13 @@
   dependencies:
     tslib "^2.4.0"
 
+"@types/mongodb@^4.0.7":
+  version "4.0.7"
+  resolved "https://registry.npmjs.org/@types/mongodb/-/mongodb-4.0.7.tgz"
+  integrity sha512-lPUYPpzA43baXqnd36cZ9xxorprybxXDzteVKCPAdp14ppHtFJHnXYvNpmBvtMUTb5fKXVv6sVbzo1LHkWhJlw==
+  dependencies:
+    mongodb "*"
+
 "@types/node@20.11.17":
   version "20.11.17"
   resolved "https://registry.npmjs.org/@types/node/-/node-20.11.17.tgz"
@@ -582,7 +589,7 @@ mongodb-connection-string-url@^3.0.0:
     "@types/whatwg-url" "^11.0.2"
     whatwg-url "^13.0.0"
 
-mongodb@^6.3.0:
+mongodb@*, mongodb@^6.3.0:
   version "6.6.0"
   resolved "https://registry.npmjs.org/mongodb/-/mongodb-6.6.0.tgz"
   integrity sha512-LoR0hel6y1i7pubPOzbflccdc89RDOapIGqwce4aenOfhhLKOqiQ2F4yQHP+Hqa7TuPhpVqDVjixbvUSx7R0rQ==

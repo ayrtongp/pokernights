@@ -87,7 +87,7 @@ const TabelaPadrao = ({ id, resultData, columns, handlePageChange, onRowClick, e
           {Array.isArray(data) && data.length > 0 ? (
             data.map((row: any, index) => (
               <tr onClick={() => onRowClick(row._id)} key={index} 
-              className={`cursor-pointer hover:bg-green-300 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white hover:bg-gray-100'} last:font-bold`}>
+              className={`cursor-pointer hover:bg-green-300 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white hover:bg-gray-100'} first:font-bold`}>
                 {columns.map((nome, ind) => {
 
                   let textColor = ''

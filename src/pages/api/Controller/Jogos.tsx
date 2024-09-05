@@ -25,6 +25,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
         }
       }
 
+      else if (req.query.type === 'isGameActive') {
+        const id = new ObjectId(req.query.id as string)
+        try {
+          const documents = await mainCollection.findOne({ _id: id });
+          return res.status(200).json(documents);
+        } catch (err) {
+          console.error(err)
+          return res.status(500).json({ message: 'isGameActive: Erro não identificado. Procure um administrador.' });
+        }
+      }
+
       // -------------------------
       // CONTAR DOCUMENTOS
       // -------------------------
@@ -83,29 +94,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse,
       break;
 
     case 'PUT':
-      try {
-        const myObjectId = new ObjectId(req.query.id as unknown as ObjectId);
-        const bodyObject = JSON.parse(req.body)
 
-        if (req.query.type === 'changePhoto' && bodyObject.foto_base64) {
-          const novaFoto = bodyObject.foto_base64
-          await mainCollection.updateOne({ _id: myObjectId }, { $set: { foto_base64: novaFoto } },);
-          return res.status(201).json({ message: 'Foto do usuário alterada com sucesso!', method: 'PUT', url: `ResidentesController?type=${req.query.tipo}&id=${req.query.id}` });
+      if (req.query.type === 'closeGame') {
+        try {
+          const { jogoId, aberto } = req.body
+          const now = getCurrentDateTime();
+          const putObj = { aberto, updatedAt: now }
+          const id = new ObjectId(jogoId as string)
+
+          const response = await mainCollection.updateOne({ _id: id }, { $set: putObj })
+          return res.status(200).json({ response })
+
+        } catch (error) {
+          return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
         }
-
-        else if (req.query.type === 'changeData') {
-          const myBody = JSON.parse(req.body)
-          await mainCollection.updateOne({ _id: myObjectId }, { $set: myBody },);
-          return res.status(201).json({ message: 'Dados do sinal vital alterados com sucesso!', method: 'PUT', url: `SinaisVitaisControllerid=${req.query.id}` });
-        }
-
-        else {
-          return res.status(404).json({ message: 'Residente não encontrado!', });
-        }
-
-      } catch (err) {
-        return res.status(500).json({ message: 'Erro não identificado. Procure um administrador.' });
       }
+
       break;
 
     case 'DELETE':

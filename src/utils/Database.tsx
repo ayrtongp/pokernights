@@ -1,6 +1,6 @@
 import { MongoClient, Db, } from "mongodb";
 
-let db = null
+let db: any = null
 
 if (!process.env.DATABASE_URI) {
   throw new Error("Please add your Mongo URI to .env.local");
@@ -11,11 +11,9 @@ export default async function connect() {
     return { db }
   }
 
-  const DATABASE_URI = process.env.DATABASE_URI
+  const DATABASE_URI = process.env.DATABASE_URI as string
 
-  const client = new MongoClient(DATABASE_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
+  const client: MongoClient = new MongoClient(DATABASE_URI, {
   })
 
   await client.connect()
